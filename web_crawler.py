@@ -49,7 +49,7 @@ class WebCrawler(object):
             number_links = 100
         if not keywords:
             self.error("Error: No keyword")
-        elif isinstance(keywords, basestring):
+        elif isinstance(keywords, str):
             keywords = [keywords]
         self.keywords = [keywords]
 
@@ -90,30 +90,37 @@ class WebCrawler(object):
         print("Crawling Google Search Engine...")
         service = build("customsearch", "v1", developerKey=api_key)
         response = service.cse().list(q=keyword,
-                                      cx=engine_id,
-                                      searchType='image',
-                                      num=items_per_page,
-                                      fileType='jpg&img;png&img;bmp&img;gif&img',
-                                      fields='items/link, queries',
-                                     ).execute()
+                                    cx=engine_id,
+                                    searchType='image',
+                                    num=items_per_page,
+                                    fileType='jpg&img;png&img',
+                                    fields='items/link, queries',
+                                    rights="cc_publicdomain,cc_noncommercial"
+                                    ).execute()
         items = response['items']
         for image in items:
             links.append(image['link'])
 
         # get next pages:
-        for i in range(1, pages_nbr):
+        for j in range(1, pages_nbr):
             sys.stdout.flush()
+
+            print(response['queries']['nextPage'][0]['startIndex'])
+
             response = service.cse().list(q=keyword,
-                                          cx=engine_id,
-                                          searchType='image',
-                                          num=items_per_page,
-                                          fileType='jpg&img;png&img;bmp&img;gif&img',
-                                          fields='items/link, queries',
-                                          start=response['queries']['nextPage'][0]['startIndex'],
-                                         ).execute()
+                                        cx=engine_id,
+                                        searchType='image',
+                                        num=items_per_page,
+                                        fileType='jpg&img;png&img;',
+                                        fields='items/link, queries',
+                                        rights="cc_publicdomain,cc_noncommercial",
+                                        start=response['queries']['nextPage'][0]['startIndex'],
+                                        ).execute()
             items = response['items']
             for image in items:
                 links.append(image['link'])
+                
+
         print("\r >> ", len(links), " links extracted...", end="")
 
         # store and reduce the number of images if too much:
@@ -181,7 +188,7 @@ class WebCrawler(object):
         with open(filename, 'w') as links_file:
             for keyword in self.images_links:
                 for link in self.images_links[keyword]:
-                    links_file.write(link)
+                    links_file.write(link+"\n")
         print("\nLinks saved to '", filename, "'")
 
     def load_urls(self, filename):

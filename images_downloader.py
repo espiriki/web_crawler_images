@@ -3,7 +3,9 @@
 
 from __future__ import print_function
 import urllib
+import urllib.request
 import sys
+import ssl
 from dataset_builder import DatasetBuilder
 
 __author__ = "Amine BENDAHMANE (@AmineHorseman)"
@@ -42,9 +44,9 @@ class ImagesDownloader(object):
             for link in links:
                 target_file = target_folder + '/' + keyword + '/' + link.split('/')[-1]
                 try:
-                    f = urllib.URLopener()
-                    f.retrieve(link, target_file)
-                except IOError:
+                    urllib.request.urlopen(link,timeout=2)
+                    urllib.request.urlretrieve(link, target_file)
+                except (IOError, ssl.CertificateError):
                     self.failed_links.append(link)
                 progress = progress + 1
                 print("\r >> Download progress: ", (progress * 100 / images_nbr), "%...", end="")

@@ -1,17 +1,42 @@
 #!/usr/bin/env python
+from dataset_builder import DatasetBuilder
+from web_crawler import WebCrawler
+import os
+from os import listdir
+import sys
+import shutil
 
-keywords = ["cats", "dogs", "birds"]
-api_keys = {'google': ('XXXXXXXXXXXXXXXXXXXXXXXX', 'YYYYYYYYY'),
-            'flickr': ('XXXXXXXXXXXXXXXXXXXXXXXX', 'YYYYYYYYY')}
-images_nbr = 10 # number of images to fetch
-download_folder = "./data" # folder in which the images will be stored
+api_keys = {}
+
+number_to_name = {1: "black", 2: "blue", 3: "green",
+                  4: "take_to_recycle", 5: "blue/refundable"}
+
+string_to_search = sys.argv[1]
+
+# num_images = int(input("How many images to search for? 0 to skip\n"))
+num_images = 199
+
+if num_images == 0:
+    print("Skipping!")
+    sys.exit(0)
+
+bin_colour = input("Which class is the object?\
+    \n1 - black\
+    \n2 - blue\
+    \n3 - green\
+    \n4 - take_to_recycle\
+    \n5 - refundable\n")
+
+keywords = [string_to_search]
+images_nbr = num_images  # number of images to fetch
+download_folder = "./data"  # folder in which the images will be stored
 
 ### Crawl and download images ###
-from web_crawler import WebCrawler
 crawler = WebCrawler(api_keys)
 
 # 1. Crawl the web and collect URLs:
-crawler.collect_links_from_web(keywords, images_nbr, remove_duplicated_links=True)
+crawler.collect_links_from_web(
+    keywords, images_nbr, remove_duplicated_links=True)
 
 # 2. (alernative to the previous line) Load URLs from a file instead of the web:
 #crawler.load_urls(download_folder + "/links.txt")
@@ -24,46 +49,33 @@ crawler.save_urls(download_folder + "/links.txt")
 # 4. Download the images:
 crawler.download_images(target_folder=download_folder)
 
-
 ### Build the dataset ###
-from dataset_builder import DatasetBuilder
 dataset_builder = DatasetBuilder()
 
 # 1. rename the downloaded images:
 source_folder = download_folder
 target_folder = download_folder + "_renamed"
 dataset_builder.rename_files(source_folder, target_folder)
-#dataset_builder.rename_files(source_folder, target_folder, extensions=('.jpg', '.jpeg', '.png', '.gif'))
 
-# 2. Resize the images:
-source_folder = download_folder
-target_folder = download_folder + "_resized"
-dataset_builder.reshape_images(source_folder, target_folder)
-#dataset_builder.reshape_images(source_folder, target_folder, width=64, height=64)
 
-# 3. Crop the images:
-source_folder = download_folder
-target_folder = download_folder + "_cropped"
-dataset_builder.crop_images(source_folder, target_folder, height=55, width=55)
+folder = "data"+os.sep+string_to_search+os.sep
+for file_name in listdir(folder):
 
-# 4. Merge the folders:
-source_folder = download_folder
-target_folder = download_folder + "_merged"
-dataset_builder.merge_folders(source_folder, target_folder, extensions=('.jpg', '.jpeg', '.png', '.gif'))
+    if file_name.endswith('.jpeg') or \
+       file_name.endswith('.jpg') or \
+       file_name.endswith('.png'):
+        continue
+    else:
+        os.remove(folder + file_name)
 
-# 5. Convert to grayscale:
-source_folder = download_folder
-target_folder = download_folder + "_grayscale"
-dataset_builder.convert_to_grayscale(source_folder, target_folder, extensions=('.jpg', '.jpeg', '.png', '.gif'))
 
-# 6. Change format to .png:
-source_folder = download_folder
-target_folder = download_folder + "_png_format"
-dataset_builder.convert_format(source_folder, target_folder, new_extension='.png')
-#dataset_builder.convert_format(source_folder, target_folder, extensions=('.jpg', '.jpeg', '.png', '.gif'), new_extension='.png')
+wait = input("Enter when done filtering images")
 
-# 7. Convert dataset to sigle file:
-source_folder = download_folder
-target_folder = download_folder + "_single_file"
-dataset_builder.convert_to_single_file(source_folder, target_folder, flatten=False, create_labels_file=True)
-#dataset_builder.convert_to_single_file(source_folder, target_folder, flatten=False, create_labels_file=True, extensions=('.jpg', '.jpeg', '.png', '.gif')) 
+
+for file_name in listdir(folder):
+    name = number_to_name[int(bin_colour)]
+    dest_folder = "dataset"+os.sep+name+os.sep+string_to_search
+    if not os.path.exists(dest_folder):
+        os.makedirs(dest_folder)
+
+    shutil.copy(folder + file_name, dest_folder)
